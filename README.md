@@ -4,7 +4,7 @@ A FastAPI application for maintaining a list of cities and recording their curre
 temperatures. Data is stored in SQLite through SQLAlchemy. Current weather is loaded
 asynchronously from the keyless [Open-Meteo API](https://open-meteo.com/).
 
-## Setup and run
+## Running the application
 
 Python 3.11 or newer is recommended.
 
@@ -50,7 +50,7 @@ curl -X POST http://127.0.0.1:8000/temperatures/update
 curl 'http://127.0.0.1:8000/temperatures?city_id=1'
 ```
 
-## Design notes
+## Design choices
 
 - Routers, persistence models, validation schemas, and the external weather client
   are separated so each part can be tested or replaced independently.
@@ -58,10 +58,18 @@ curl 'http://127.0.0.1:8000/temperatures?city_id=1'
 - Weather requests for all cities run concurrently using `asyncio.gather`. Records
   are committed only after every request succeeds; an upstream failure returns
   `502 Bad Gateway` without saving a partial update.
+- SQLAlchemy provides the persistence layer, while SQLite keeps local setup simple.
+- The application creates its database tables automatically during startup.
+
+## Assumptions and simplifications
+
 - Open-Meteo geocoding can return several places with the same name. This project
   intentionally uses the first result because the required city model has no country
   or coordinates.
 - Deleting a city cascades to its temperature history.
+- Every call to `/temperatures/update` creates a new history record for each city,
+  even if Open-Meteo returns the same observation time as an earlier call.
+- Database migrations and authentication are outside the scope of this assignment.
 
 ## Tests
 
